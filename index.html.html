@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chatbot — Assistente Cartão</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f0f4f8;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    #wrapper {
+      width: 100%;
+      max-width: 480px;
+    }
+
+    h1 {
+      font-size: 13px;
+      font-weight: 600;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 12px;
+      padding-left: 4px;
+    }
+
+    #chat-container {
+      display: flex;
+      flex-direction: column;
+      height: 580px;
+      border-radius: 16px;
+      overflow: hidden;
+      background: #ffffff;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06);
+    }
+
+    /* HEADER */
+    #chat-header {
+      padding: 14px 18px;
+      border-bottom: 1px solid #e8edf2;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #ffffff;
+    }
+    .avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: #dcfce7;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .avatar i { font-size: 18px; color: #15803d; }
+    .hdr-info .name { font-size: 15px; font-weight: 600; color: #0f172a; }
+    .hdr-info .status {
+      font-size: 12px; color: #22c55e;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .hdr-info .status::before {
+      content: ''; width: 7px; height: 7px; border-radius: 50%;
+      background: #22c55e; display: inline-block;
+    }
+
+    /* MESSAGES */
+    #messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 18px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      background: #f8fafc;
+    }
+    #messages::-webkit-scrollbar { width: 4px; }
+    #messages::-webkit-scrollbar-track { background: transparent; }
+    #messages::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
+
+    .msg { display: flex; gap: 8px; max-width: 88%; }
+    .msg.user { align-self: flex-end; flex-direction: row-reverse; }
+    .msg.bot  { align-self: flex-start; }
+
+    .bubble {
+      padding: 10px 14px;
+      border-radius: 16px;
+      font-size: 14px;
+      line-height: 1.6;
+      color: #0f172a;
+    }
+    .msg.bot .bubble {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-bottom-left-radius: 4px;
+    }
+    .msg.user .bubble {
+      background: #166534;
+      color: #ffffff;
+      border-bottom-right-radius: 4px;
+    }
+
+    .bot-icon {
+      width: 30px; height: 30px; flex-shrink: 0; border-radius: 50%;
+      background: #dcfce7;
+      display: flex; align-items: center; justify-content: center;
+      margin-top: 2px;
+    }
+    .bot-icon i { font-size: 15px; color: #15803d; }
+
+    /* META BADGES */
+    .meta {
+      display: flex; align-items: center; gap: 6px;
+      margin-top: 7px; flex-wrap: wrap;
+    }
+    .tag-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 11px; font-weight: 600;
+      padding: 3px 10px; border-radius: 99px;
+      background: #dcfce7; color: #15803d;
+      border: 1px solid #86efac;
+    }
+    .conf-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 11px;
+      padding: 3px 10px; border-radius: 99px;
+      background: #f1f5f9; color: #64748b;
+      border: 1px solid #e2e8f0;
+    }
+    .prob-bar-wrap {
+      display: flex; align-items: center; gap: 8px;
+      margin-top: 5px;
+    }
+    .prob-bar-bg {
+      flex: 1; height: 3px; border-radius: 2px;
+      background: #e2e8f0; overflow: hidden;
+    }
+    .prob-bar-fill {
+      height: 100%; border-radius: 2px;
+      background: #22c55e;
+      transition: width 0.5s ease;
+    }
+    .prob-label { font-size: 11px; color: #94a3b8; white-space: nowrap; }
+
+    /* QUICK CHIPS */
+    .quick-chips {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      padding: 10px 14px;
+      background: #ffffff;
+      border-top: 1px solid #e8edf2;
+    }
+    .chip {
+      font-size: 12px; padding: 5px 12px;
+      border-radius: 99px;
+      border: 1px solid #d1d5db;
+      background: #f9fafb;
+      color: #374151;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+    }
+    .chip:hover {
+      background: #dcfce7;
+      border-color: #86efac;
+      color: #15803d;
+    }
+
+    /* INPUT AREA */
+    #input-area {
+      padding: 12px 14px;
+      border-top: 1px solid #e8edf2;
+      display: flex; gap: 8px; align-items: flex-end;
+      background: #ffffff;
+    }
+    #user-input {
+      flex: 1; padding: 10px 14px; font-size: 14px;
+      border-radius: 12px;
+      border: 1px solid #d1d5db;
+      background: #f9fafb;
+      color: #0f172a;
+      font-family: inherit;
+      resize: none;
+      min-height: 40px; max-height: 96px;
+      line-height: 1.5;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    #user-input:focus {
+      outline: none;
+      border-color: #22c55e;
+      background: #ffffff;
+    }
+    #user-input::placeholder { color: #9ca3af; }
+
+    #send-btn {
+      width: 40px; height: 40px; border-radius: 50%;
+      border: none; background: #16a34a; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.15s, transform 0.1s;
+    }
+    #send-btn:hover { background: #15803d; }
+    #send-btn:active { transform: scale(0.93); }
+    #send-btn i { font-size: 18px; color: #fff; }
+    #send-btn:disabled { background: #d1d5db; cursor: not-allowed; }
+
+    /* TYPING */
+    .typing-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: #94a3b8;
+      animation: blink 1.3s infinite;
+    }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes blink { 0%,80%,100%{opacity:0.2} 40%{opacity:1} }
+
+    /* FOOTER */
+    .footer {
+      text-align: center;
+      font-size: 11px;
+      color: #94a3b8;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+<div id="wrapper">
+  <h1>Atendimento Virtual</h1>
+
+  <div id="chat-container">
+    <div id="chat-header">
+      <div class="avatar"><i class="ti ti-credit-card"></i></div>
+      <div class="hdr-info">
+        <div class="name">Assistente Cartão</div>
+        <div class="status">Online agora</div>
+      </div>
+    </div>
+
+    <div id="messages"></div>
+
+    <div class="quick-chips">
+      <button class="chip" onclick="sendChip(this)">Qual meu limite disponível?</button>
+      <button class="chip" onclick="sendChip(this)">Como pagar minha fatura?</button>
+      <button class="chip" onclick="sendChip(this)">Como bloquear meu cartão?</button>
+      <button class="chip" onclick="sendChip(this)">Esqueci minha senha</button>
+      <button class="chip" onclick="sendChip(this)">Como parcelar minha fatura?</button>
+    </div>
+
+    <div id="input-area">
+      <textarea id="user-input" placeholder="Digite sua pergunta..." rows="1"></textarea>
+      <button id="send-btn" onclick="handleSend()" aria-label="Enviar">
+        <i class="ti ti-send"></i>
+      </button>
+    </div>
+  </div>
+
+  <p class="footer">Classificação por Naive Bayes · Base com 190 perguntas</p>
+</div>
+
+<script>
+const KB = [
+  ["Fatura","Qual o valor da minha fatura?","Você pode consultar o valor atualizado da sua fatura pelo app ou site na seção \"Fatura\"."],
+  ["Fatura","Quando vence minha fatura?","A data de vencimento da sua fatura está disponível no app ou na própria fatura."],
+  ["Fatura","Posso antecipar minha fatura?","Sim! Você pode pagar sua fatura antes do vencimento pelo app ou banco."],
+  ["Fatura","Como ver minha fatura atual?","Acesse o app e vá até a seção \"Fatura\" para visualizar os detalhes."],
+  ["Fatura","Minha fatura já fechou?","Você pode verificar o status da fatura diretamente no app."],
+  ["Fatura","Como baixar a fatura em PDF?","No app, selecione sua fatura e clique na opção \"Baixar PDF\"."],
+  ["Fatura","Não recebi minha fatura, o que faço?","Você pode acessar a fatura pelo app ou solicitar envio por e-mail."],
+  ["Fatura","Posso pagar parte da fatura?","Sim, você pode pagar o valor mínimo ou outro valor acima dele."],
+  ["Fatura","Qual o valor mínimo da fatura?","O valor mínimo está disponível na sua fatura."],
+  ["Fatura","Como funciona o pagamento mínimo?","O pagamento mínimo evita atraso, mas gera juros sobre o restante."],
+  ["Fatura","Posso alterar a data de vencimento?","Sim, você pode solicitar a alteração pelo app ou atendimento."],
+  ["Fatura","Como ver faturas anteriores?","No app, acesse o histórico de faturas."],
+  ["Fatura","Onde vejo os detalhes da fatura?","Você pode ver todos os detalhes no app na seção de fatura."],
+  ["Fatura","Minha fatura está muito alta, por quê?","Verifique as compras realizadas ou possíveis encargos na fatura."],
+  ["Fatura","Posso dividir minha fatura?","Sim, você pode parcelar sua fatura pelo app."],
+  ["Fatura","Como pagar minha fatura?","Você pode pagar via app, banco, lotérica ou internet banking."],
+  ["Fatura","Quanto falta para fechar a fatura?","Essa informação está disponível no app."],
+  ["Fatura","Minha fatura veio com cobrança indevida?","Você pode contestar a cobrança diretamente pelo app."],
+  ["Fatura","Posso receber a fatura por e-mail?","Sim, você pode ativar essa opção nas configurações."],
+  ["Fatura","A fatura já foi paga?","Verifique o status de pagamento no app."],
+  ["Fatura","Quanto estou devendo no total?","Você pode ver o total devido no app na seção de fatura."],
+  ["Fatura","Posso pagar antes do vencimento?","Sim, o pagamento antecipado é permitido."],
+  ["Fatura","Como gerar segunda via da fatura?","A segunda via pode ser gerada pelo app."],
+  ["Fatura","Minha fatura não atualizou, por quê?","Pode haver atraso na atualização, tente novamente mais tarde."],
+  ["Fatura","Como contestar um valor na fatura?","Acesse a compra e selecione a opção de contestação no app."],
+  ["Limite","Qual meu limite disponível?","Você pode consultar seu limite disponível no app."],
+  ["Limite","Como aumentar meu limite?","Você pode solicitar aumento de limite pelo app."],
+  ["Limite","Quando meu limite é liberado?","O limite é liberado após a confirmação do pagamento da fatura."],
+  ["Limite","Meu limite diminuiu, por quê?","Isso pode ocorrer por uso recente ou ajustes internos."],
+  ["Limite","Posso pedir aumento de limite?","Sim, a solicitação pode ser feita pelo app."],
+  ["Limite","Como funciona o limite emergencial?","O limite emergencial pode ser liberado mediante análise."],
+  ["Limite","Quanto tenho de limite restante?","Consulte essa informação no app."],
+  ["Limite","Meu limite não atualizou após pagamento","Isso pode levar algumas horas após a confirmação do pagamento."],
+  ["Limite","Posso transferir limite para outro cartão?","Essa função pode não estar disponível para todos os clientes."],
+  ["Limite","Como liberar limite bloqueado?","Verifique no app ou entre em contato com atendimento."],
+  ["Limite","Tenho limite aprovado?","Consulte essa informação no app."],
+  ["Limite","Como saber meu limite total?","Seu limite total está disponível no app."],
+  ["Limite","Meu limite está zerado, o que fazer?","Aguarde a liberação após pagamento ou solicite análise."],
+  ["Limite","Posso usar o limite da fatura aberta?","Sim, conforme disponibilidade."],
+  ["Limite","Como funciona o limite parcelado?","O valor parcelado compromete o limite total."],
+  ["Limite","O limite aumenta automaticamente?","Pode aumentar conforme análise de crédito."],
+  ["Limite","Posso ter limite extra?","Em alguns casos, pode ser liberado."],
+  ["Limite","Meu limite foi negado, por quê?","Isso ocorre após análise de crédito."],
+  ["Limite","Como consultar histórico de limite?","Disponível no app."],
+  ["Limite","Posso usar limite internacional?","Sim, se habilitado."],
+  ["Limite","O que consome meu limite?","Compras e parcelamentos utilizam seu limite."],
+  ["Limite","Limite disponível é diferente do total?","Sim, o disponível é o restante do total."],
+  ["Limite","Posso dividir limite entre cartões?","Depende das funcionalidades disponíveis."],
+  ["Limite","Como recuperar limite?","Efetuando pagamentos da fatura."],
+  ["Limite","Meu limite foi bloqueado, por quê?","Pode ser por segurança ou atraso."],
+  ["Bloqueio","Como bloquear meu cartão?","Você pode bloquear pelo app ou atendimento."],
+  ["Bloqueio","Meu cartão foi bloqueado, por quê?","Pode ter sido por segurança."],
+  ["Bloqueio","Posso desbloquear meu cartão?","Sim, pelo app ou atendimento."],
+  ["Bloqueio","Como bloquear cartão perdido?","Acesse o app e selecione \"Bloquear cartão\"."],
+  ["Bloqueio","Como bloquear compras suspeitas?","Você pode bloquear o cartão pelo app."],
+  ["Bloqueio","Cartão bloqueado por segurança, o que fazer?","Entre no app ou atendimento para desbloquear."],
+  ["Bloqueio","Posso bloquear temporariamente?","Sim, essa opção está disponível no app."],
+  ["Bloqueio","Como bloquear compras online?","Você pode configurar isso no app."],
+  ["Bloqueio","Meu cartão foi bloqueado automaticamente?","Pode ocorrer por segurança."],
+  ["Bloqueio","Como saber se meu cartão está bloqueado?","Verifique o status no app."],
+  ["Bloqueio","Posso bloquear pelo app?","Sim."],
+  ["Bloqueio","Como desbloquear para compras internacionais?","Ative no app."],
+  ["Bloqueio","Bloqueei errado, como desfazer?","Você pode desbloquear pelo app."],
+  ["Bloqueio","Posso bloquear um cartão adicional?","Sim."],
+  ["Bloqueio","Como bloquear apenas uma função do cartão?","Verifique as configurações no app."],
+  ["Bloqueio","Meu cartão foi bloqueado após tentativa de compra","Isso pode ocorrer por segurança."],
+  ["Bloqueio","Como bloquear por roubo?","Bloqueie imediatamente pelo app."],
+  ["Bloqueio","Posso bloquear por telefone?","Sim."],
+  ["Bloqueio","Quanto tempo dura o bloqueio?","Até que seja desbloqueado."],
+  ["Bloqueio","Posso bloquear só o crédito?","Depende das configurações disponíveis."],
+  ["Bloqueio","Como bloquear débito automático?","Verifique no app."],
+  ["Bloqueio","Cartão bloqueado impede pagamento de fatura?","Não impede."],
+  ["Bloqueio","Como ativar novamente após bloqueio?","Desbloqueie pelo app."],
+  ["Bloqueio","Posso bloquear compras por aproximação?","Sim."],
+  ["Bloqueio","Como bloquear uso internacional?","Desative no app."],
+  ["Cancelamento","Como cancelar meu cartão?","Você pode solicitar pelo app ou atendimento."],
+  ["Cancelamento","Posso cancelar pelo app?","Sim."],
+  ["Cancelamento","O cancelamento é imediato?","Pode levar alguns dias."],
+  ["Cancelamento","Tenho taxa para cancelar?","Normalmente não."],
+  ["Cancelamento","Como cancelar cartão adicional?","Pelo app ou atendimento."],
+  ["Cancelamento","Posso reativar após cancelar?","Depende do caso."],
+  ["Cancelamento","Cancelar cartão afeta meu limite?","Sim."],
+  ["Cancelamento","Preciso pagar fatura para cancelar?","Sim, débitos devem ser quitados."],
+  ["Cancelamento","Como cancelar cartão perdido?","Solicite cancelamento pelo app."],
+  ["Cancelamento","Posso cancelar temporariamente?","Use bloqueio em vez de cancelamento."],
+  ["Cancelamento","Cancelar cartão apaga dívidas?","Não."],
+  ["Cancelamento","Quanto tempo demora o cancelamento?","Alguns dias úteis."],
+  ["Cancelamento","Como confirmar que foi cancelado?","Você receberá confirmação."],
+  ["Cancelamento","Posso cancelar sem falar com atendente?","Sim, pelo app."],
+  ["Cancelamento","O que acontece com parcelas após cancelar?","Continuam sendo cobradas."],
+  ["Cancelamento","Cancelar cartão afeta meu score?","Pode afetar."],
+  ["Cancelamento","Posso cancelar só uma função do cartão?","Depende."],
+  ["Cancelamento","Como cancelar seguro do cartão?","Pelo app ou atendimento."],
+  ["Cancelamento","Cancelar cartão encerra conta?","Depende do serviço."],
+  ["Cancelamento","Posso cancelar mesmo com fatura aberta?","Sim, mas deve pagar."],
+  ["Cancelamento","Recebo comprovante de cancelamento?","Sim."],
+  ["Cancelamento","Como cancelar débito automático?","Pelo app."],
+  ["Cancelamento","Posso cancelar um cartão virtual?","Sim."],
+  ["Cancelamento","Cancelamento é definitivo?","Na maioria dos casos sim."],
+  ["Cancelamento","Como cancelar cobrança recorrente?","Cancele com o estabelecimento ou app."],
+  ["Parcelamento","Como parcelar minha fatura?","Você pode parcelar pelo app."],
+  ["Parcelamento","Quantas vezes posso parcelar?","Depende das opções disponíveis."],
+  ["Parcelamento","Qual a taxa de parcelamento?","Disponível na simulação."],
+  ["Parcelamento","Posso antecipar parcelas?","Sim."],
+  ["Parcelamento","Como ver parcelas ativas?","No app."],
+  ["Parcelamento","Posso cancelar parcelamento?","Depende das regras."],
+  ["Parcelamento","Parcelamento libera limite?","Parcialmente."],
+  ["Parcelamento","Posso parcelar compras já feitas?","Sim."],
+  ["Parcelamento","Como funciona o parcelamento automático?","É ativado conforme condições."],
+  ["Parcelamento","Posso renegociar parcelas?","Sim."],
+  ["Parcelamento","Parcelamento tem juros?","Sim."],
+  ["Parcelamento","Como simular parcelamento?","Use o app."],
+  ["Parcelamento","Posso pagar parcela antecipada?","Sim."],
+  ["Parcelamento","Parcelamento afeta limite?","Sim."],
+  ["Parcelamento","Posso parcelar parte da fatura?","Sim."],
+  ["Parcelamento","Como acompanhar parcelamento?","No app."],
+  ["Parcelamento","Parcelamento aparece na fatura?","Sim."],
+  ["Parcelamento","Posso mudar quantidade de parcelas?","Depende."],
+  ["Parcelamento","Parcelamento tem multa?","Verifique condições."],
+  ["Parcelamento","Posso parcelar compras internacionais?","Sim."],
+  ["Parcelamento","Como quitar parcelamento?","Pagando antecipadamente."],
+  ["Parcelamento","Parcelamento é aprovado na hora?","Geralmente sim."],
+  ["Parcelamento","Posso parcelar fatura atrasada?","Sim."],
+  ["Parcelamento","Parcelamento cancela juros?","Não totalmente."],
+  ["Parcelamento","Como ver taxa de juros?","Na simulação."],
+  ["Senha","Como criar senha do cartão?","Crie sua senha pelo app."],
+  ["Senha","Esqueci minha senha, o que faço?","Redefina pelo app."],
+  ["Senha","Como trocar minha senha?","No app."],
+  ["Senha","Minha senha foi bloqueada","Redefina pelo app."],
+  ["Senha","Como desbloquear senha?","Pelo app."],
+  ["Senha","Posso usar mesma senha para tudo?","Não é recomendado."],
+  ["Senha","Como cadastrar nova senha?","Pelo app."],
+  ["Senha","Quantas tentativas posso errar?","Geralmente até 3."],
+  ["Senha","Como redefinir senha pelo app?","Use a opção \"Esqueci minha senha\"."],
+  ["Senha","Senha expira?","Pode expirar."],
+  ["Senha","Posso usar senha provisória?","Sim."],
+  ["Senha","Como saber se minha senha está correta?","Teste em uma operação."],
+  ["Senha","Senha bloqueada impede compras?","Sim."],
+  ["Senha","Como recuperar senha?","Pelo app."],
+  ["Senha","Posso mudar senha a qualquer momento?","Sim."],
+  ["Senha","Como cadastrar senha para compras online?","No app."],
+  ["Senha","Senha do cartão é a mesma do app?","Pode ser diferente."],
+  ["Senha","Posso usar biometria?","Sim."],
+  ["Senha","Como validar minha senha?","Pelo app."],
+  ["Senha","Como proteger minha senha?","Não compartilhe com terceiros."],
+  ["Cartão","Meu cartão chegou?","Verifique o status no app."],
+  ["Cartão","Como desbloquear cartão novo?","Ative pelo app."],
+  ["Cartão","Posso pedir segunda via?","Sim."],
+  ["Cartão","Meu cartão venceu, e agora?","Solicite novo cartão."],
+  ["Cartão","Como ativar meu cartão?","Pelo app."],
+  ["Cartão","Posso ter mais de um cartão?","Sim."],
+  ["Cartão","Como solicitar cartão adicional?","Pelo app."],
+  ["Cartão","Meu cartão não funciona","Verifique bloqueios ou limite."],
+  ["Cartão","Como atualizar dados do cartão?","Pelo app."],
+  ["Cartão","Cartão virtual funciona como físico?","Sim."],
+  ["Cartão","Posso usar antes de chegar?","Use o virtual."],
+  ["Cartão","Como acompanhar entrega?","No app."],
+  ["Cartão","Meu cartão foi recusado","Verifique limite ou bloqueio."],
+  ["Cartão","Como cadastrar no app?","Siga instruções no app."],
+  ["Cartão","Posso usar no exterior?","Sim, se habilitado."],
+  ["Cartão","Cartão tem anuidade?","Depende do plano."],
+  ["Cartão","Como mudar bandeira do cartão?","Consulte disponibilidade."],
+  ["Cartão","Posso personalizar meu cartão?","Depende."],
+  ["Cartão","Cartão está com defeito","Solicite segunda via."],
+  ["Cartão","Como solicitar upgrade?","Pelo app."],
+  ["Compras","Minha compra foi recusada, por quê?","Verifique limite ou bloqueio."],
+  ["Compras","Como ver minhas compras?","No app."],
+  ["Compras","Não reconheço uma compra","Conteste pelo app."],
+  ["Compras","Posso cancelar uma compra?","Depende do estabelecimento."],
+  ["Compras","Como contestar cobrança?","Pelo app."],
+  ["Compras","Compra duplicada, o que fazer?","Conteste pelo app."],
+  ["Compras","Como funciona compra por aproximação?","Aproxime o cartão da máquina."],
+  ["Compras","Posso bloquear compras online?","Sim."],
+  ["Compras","Como autorizar uma compra?","Confirme pelo app."],
+  ["Compras","Compra internacional foi negada","Verifique liberação."],
+  ["Compras","Como ver histórico de compras?","No app."],
+  ["Compras","Posso limitar valor por compra?","Depende."],
+  ["Compras","Como ativar notificação de compras?","No app."],
+  ["Compras","Compra não aparece na fatura","Aguarde atualização."],
+  ["Compras","Posso parcelar compra depois?","Sim."],
+  ["Compras","Como funciona estorno?","O valor é devolvido."],
+  ["Compras","Quanto tempo leva um estorno?","Até 2 faturas."],
+  ["Compras","Compra foi debitada duas vezes","Conteste."],
+  ["Compras","Posso bloquear compras internacionais?","Sim."],
+  ["Compras","Como funciona crédito à vista?","Cobrado na fatura atual."],
+  ["Conta","Como acessar minha conta?","Use login no app."],
+  ["Conta","Esqueci meu login","Recupere pelo app."],
+  ["Conta","App não está funcionando","Tente atualizar ou reinstalar."],
+  ["Conta","Como atualizar meus dados?","No app."],
+  ["Conta","Posso acessar pelo site?","Sim."],
+  ["Conta","Como ativar notificações?","No app."],
+  ["Conta","Meu app travou","Reinicie."],
+  ["Conta","Como sair da conta?","No app."],
+  ["Conta","Posso ter mais de um login?","Depende."],
+  ["Conta","Como excluir minha conta?","Solicite atendimento."],
+  ["Conta","Dados não atualizam","Tente novamente."],
+  ["Conta","Como ativar reconhecimento facial?","No app."],
+  ["Conta","Posso acessar em outro celular?","Sim."],
+  ["Conta","Como sincronizar dados?","Automaticamente."],
+  ["Conta","Como falar com atendimento?","Pelo app ou telefone."],
+];
+
+const catIcons = {
+  Fatura:"ti-file-invoice", Limite:"ti-trending-up", Bloqueio:"ti-lock",
+  Cancelamento:"ti-x", Parcelamento:"ti-calendar-due", Senha:"ti-key",
+  Cartão:"ti-credit-card", Compras:"ti-shopping-cart", Conta:"ti-user"
+};
+
+function norm(t) {
+  return t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim();
+}
+function tok(t) { return norm(t).split(' ').filter(w => w.length > 1); }
+
+function buildVocab(docs) {
+  const v = {}; let i = 0;
+  docs.forEach(d => tok(d).forEach(w => { if (!(w in v)) v[w] = i++; }));
+  return v;
+}
+
+function vecDoc(text, vocab) {
+  const V = Object.keys(vocab).length, a = new Float32Array(V);
+  tok(text).forEach(w => { if (w in vocab) a[vocab[w]]++; });
+  return a;
+}
+
+class NB {
+  fit(docs, labels) {
+    this.cls = [...new Set(labels)];
+    this.vocab = buildVocab(docs);
+    const V = Object.keys(this.vocab).length;
+    this.prior = {}; this.ll = {};
+    this.cls.forEach(c => {
+      const idx = labels.map((l,i) => l===c ? i : -1).filter(i => i >= 0);
+      this.prior[c] = Math.log(idx.length / docs.length);
+      const wc = new Float32Array(V);
+      idx.forEach(i => { const v2 = vecDoc(docs[i], this.vocab); for (let j=0;j<V;j++) wc[j]+=v2[j]; });
+      const tot = wc.reduce((a,b) => a+b, 0);
+      this.ll[c] = Array.from(wc).map(w => Math.log((w+1)/(tot+V)));
+    });
+  }
+  predict(text) {
+    const v2 = vecDoc(text, this.vocab);
+    let best = null, bestS = -Infinity; const sc = {};
+    this.cls.forEach(c => {
+      let s = this.prior[c];
+      for (let j=0;j<v2.length;j++) if(v2[j]>0) s += this.ll[c][j]*v2[j];
+      sc[c] = s; if(s > bestS) { bestS = s; best = c; }
+    });
+    const mx = Math.max(...Object.values(sc));
+    let sumE = 0; const ex = {};
+    this.cls.forEach(c => { ex[c] = Math.exp(sc[c]-mx); sumE += ex[c]; });
+    const pr = {}; this.cls.forEach(c => pr[c] = ex[c]/sumE);
+    return { cat: best, prob: pr[best] };
+  }
+}
+
+function cosineSim(a, b) {
+  let dot=0, na=0, nb=0;
+  for(let i=0;i<a.length;i++) { dot+=a[i]*b[i]; na+=a[i]*a[i]; nb+=b[i]*b[i]; }
+  return na&&nb ? dot/Math.sqrt(na*nb) : 0;
+}
+
+const model = new NB();
+model.fit(KB.map(r => r[1]), KB.map(r => r[0]));
+
+function findBest(query) {
+  const cat = model.predict(query);
+  if (cat.prob < 0.35) return null;
+  const qv = vecDoc(query, model.vocab);
+  let bestSim = -1, bestIdx = -1;
+  KB.forEach(([c,,], i) => {
+    if (c !== cat.cat) return;
+    const s = cosineSim(qv, vecDoc(KB[i][1], model.vocab));
+    if (s > bestSim) { bestSim = s; bestIdx = i; }
+  });
+  return bestIdx >= 0 ? { entry: KB[bestIdx], catProb: cat.prob, sim: bestSim } : null;
+}
+
+const msgsEl = document.getElementById('messages');
+const inp = document.getElementById('user-input');
+const btn = document.getElementById('send-btn');
+
+function addMsg(text, type, meta=null) {
+  const w = document.createElement('div');
+  w.className = `msg ${type}`;
+  if (type === 'bot') {
+    const icon = document.createElement('div');
+    icon.className = 'bot-icon';
+    icon.innerHTML = '<i class="ti ti-credit-card"></i>';
+    const body = document.createElement('div');
+    const b = document.createElement('div');
+    b.className = 'bubble'; b.textContent = text;
+    body.appendChild(b);
+    if (meta) {
+      const mr = document.createElement('div');
+      mr.className = 'meta';
+      mr.innerHTML = `<span class="tag-badge"><i class="ti ${catIcons[meta.cat]||'ti-tag'}"></i> ${meta.cat}</span><span class="conf-badge"><i class="ti ti-sparkles"></i> ${Math.round(meta.catProb*100)}% confiança</span>`;
+      body.appendChild(mr);
+      const pw = document.createElement('div');
+      pw.className = 'prob-bar-wrap';
+      const pct = Math.round(meta.catProb*100);
+      pw.innerHTML = `<div class="prob-bar-bg"><div class="prob-bar-fill" style="width:${pct}%"></div></div><span class="prob-label">similaridade ${Math.round(meta.sim*100)}%</span>`;
+      body.appendChild(pw);
+    }
+    w.appendChild(icon); w.appendChild(body);
+  } else {
+    w.innerHTML = `<div class="bubble">${text}</div>`;
+  }
+  msgsEl.appendChild(w);
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+}
+
+function addTyping() {
+  const t = document.createElement('div');
+  t.className = 'msg bot'; t.id = 'typ';
+  t.innerHTML = '<div class="bot-icon"><i class="ti ti-credit-card"></i></div><div class="bubble" style="display:flex;gap:5px;align-items:center"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
+  msgsEl.appendChild(t); msgsEl.scrollTop = msgsEl.scrollHeight;
+}
+function removeTyping() { const t = document.getElementById('typ'); if(t) t.remove(); }
+
+function respond(text) {
+  btn.disabled = true; addTyping();
+  setTimeout(() => {
+    removeTyping();
+    const res = findBest(text);
+    if (!res) {
+      addMsg('Desculpe, não entendi sua solicitação. Pode reformular a pergunta?', 'bot');
+    } else {
+      addMsg(res.entry[2], 'bot', { cat: res.entry[0], catProb: res.catProb, sim: res.sim });
+    }
+    btn.disabled = false;
+  }, 500 + Math.random()*400);
+}
+
+function handleSend() {
+  const t = inp.value.trim(); if (!t) return;
+  addMsg(t, 'user'); inp.value = ''; inp.style.height = 'auto'; respond(t);
+}
+function sendChip(el) { addMsg(el.textContent, 'user'); respond(el.textContent); }
+
+inp.addEventListener('keydown', e => { if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } });
+inp.addEventListener('input', () => { inp.style.height = 'auto'; inp.style.height = Math.min(inp.scrollHeight, 96)+'px'; });
+
+setTimeout(() => addMsg('Olá! Sou o assistente virtual do seu cartão. Como posso te ajudar hoje?', 'bot'), 300);
+</script>
+</body>
+</html>
